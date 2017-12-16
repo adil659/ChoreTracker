@@ -7,10 +7,5 @@
         android:orderInCategory="100"
         android:title="Create Chore"
         app:showAsAction="always" />
-    <item
-        android:id="@+id/action_settings3"
-        android:orderInCategory="100"
-        android:title="Edit Profile"
-        app:showAsAction="always" />
 
 </menu>

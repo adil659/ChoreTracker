@@ -6,11 +6,11 @@
 
     <string name="action_settings">Settings</string>
 
+    <string name="Child"></string>
+
     <string-array name="spinnerItems">
-        <item>Waqas</item>
-        <item>Adil</item>
-        <item>Quinn</item>
-        <item>Mustafa</item>
-        <item>Obinna</item>
+        <item>Child</item>
+        <item>Parent</item>
     </string-array>
+
 </resources>

@@ -7,6 +7,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.util.ArrayList;
+
 import static android.content.ContentValues.TAG;
 
 /**
@@ -21,8 +23,10 @@ public class MyDBHandler extends SQLiteOpenHelper {
     public static final String TABLE_PROFILES = "profiles";
     public static final String COLUMN_PROFILEID = "profileID";
     public static final String COLUMN_PROFILENAME = "profilename";
-   // public static final String COLUMN_POINTS = "points";
-   // public static final String COLUMN_CHORES = "chores";
+    public static final String COLUMN_POINTS = "points";
+    public static final String COLUMN_PROFILECHORES = "chores";
+    public static final String COLUMN_PROFILETYPE = "typeID";
+
 
     public static final String TABLE_CHORES = "chores";
 
@@ -35,28 +39,102 @@ public class MyDBHandler extends SQLiteOpenHelper {
     public static final String COLUMN_PERSONS = "persons";
     public static final String COLUMN_DEADLINE = "deadline";
 
+    public static final String TABLE_IDS = "userChore";
+    public static final String COLUMN_GROUPID = "connectID";
+    public static final String COLUMN_USERID = "userID";
+    public static final String COLUMN_CHOREsID = "choresID";
+
+    public static final String TABLE_SELPROFILE = "selectedProfile";
+    public static final String COLUMN_SELNAMEID = "selectedNameID";
+    public static final String COLUMN_SELNAME = "selectedName";
+
+
+
+    public static int counter =0;
+
 
     public MyDBHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    @Override
+    @Override   
     public void onCreate(SQLiteDatabase db) {
         String CREATE_PROFILES_TABLE = "CREATE TABLE " +
                 TABLE_PROFILES + "("
-                + COLUMN_PROFILEID + " INTEGER PRIMARY KEY AUTOINCREMENT," + COLUMN_PROFILENAME
-                + " TEXT" +  ")";
-        String CREATE_CHORES_TABLE = "CREATE TABLE " + TABLE_CHORES + "(" + COLUMN_CHOREID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_CHORENAME + " TEXT," + COLUMN_REQUIREMENTS + " TEXT," + COLUMN_DESCRIPTIONS + " TEXT," + COLUMN_CHOREPOINTS + " INTEGER" + ")";
+                + COLUMN_PROFILEID + " INTEGER," + COLUMN_PROFILENAME
+                + " TEXT PRIMARY KEY," + COLUMN_POINTS + " INTEGER, " + COLUMN_PROFILECHORES + " TEXT, " + COLUMN_PROFILETYPE + " INTEGER" + ")";
+
+        String CREATE_CHORES_TABLE = "CREATE TABLE " + TABLE_CHORES + "(" + COLUMN_CHOREID + " INTEGER,"
+                + COLUMN_CHORENAME + " TEXT PRIMARY KEY," + COLUMN_REQUIREMENTS + " TEXT," + COLUMN_DESCRIPTIONS + " TEXT," + COLUMN_CHOREPOINTS + " INTEGER" + ")";
+
+        String CREATE_SEL_PROFILE = "CREATE TABLE " + TABLE_SELPROFILE + "(" +COLUMN_SELNAMEID + " INTEGER PRIMARY KEY,"+ COLUMN_SELNAME + " TEXT" + ")";
+
+        String CREATE_CONNECT_TABLE = "CREATE TABLE " + TABLE_IDS + "(" + COLUMN_GROUPID+ " INTEGER,"+ COLUMN_USERID + " INTEGER," + COLUMN_CHOREsID + " INTEGER" + ")";
         db.execSQL(CREATE_PROFILES_TABLE);
         db.execSQL(CREATE_CHORES_TABLE);
+        db.execSQL(CREATE_CONNECT_TABLE);
+        db.execSQL(CREATE_SEL_PROFILE);
     }
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion,
                           int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_PROFILES);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_CHORES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_IDS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_SELPROFILE);
         onCreate(db);
+    }
+
+    public Profile getSelectedProfile(){
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        Cursor cursor =db.rawQuery( "Select * FROM " + TABLE_SELPROFILE, null);
+        System.out.println("u in hrer?");
+        while(cursor.moveToNext()) {
+            System.out.println("GIVE the word " + cursor.getString(1));
+            Profile profile = findProfile(cursor.getString(1));
+            System.out.println("GIVE the word sss" + profile.getProfileName() + " " + profile.getType());
+
+            //cursor.close();
+           // db.close();
+            return profile;
+        }
+
+            Profile fake = new Profile("null");
+            return fake;
+    }
+    public void addSelectedProfile(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_SELNAMEID, "1");
+        values.put(COLUMN_SELNAME, "null");
+        db.replace(TABLE_SELPROFILE, null, values);
+
+
+    }
+
+    public void updateSelectedProfile(String name){
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        Profile profile = findProfile(name);
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_SELNAMEID, 1);
+        values.put(COLUMN_SELNAME, profile.getProfileName());
+
+        System.out.println("the name that comes into update is "  + profile.getProfileName());
+
+
+     //   db.update(TABLE_SELPROFILE, values, COLUMN_SELNAMEID + "=?" , new String[]{"1"});
+        db.replace(TABLE_SELPROFILE, null, values);
+
+        Cursor cursor =db.rawQuery( "Select * FROM " + TABLE_SELPROFILE, null);
+        while(cursor.moveToNext()){
+            System.out.println("The name in table is " + cursor.getString(1));
+        }
+        db.close();
+
+
+
     }
 
     public boolean addProfile (Profile profile){
@@ -65,14 +143,15 @@ public class MyDBHandler extends SQLiteOpenHelper {
 
         ContentValues values = new ContentValues();
 
+        System.out.println("THIS IS profile type IN addPROFILE: " + profile.getType());
+
         values.put(COLUMN_PROFILENAME,profile.getProfileName());
-       // db.insert(TABLE_PROFILES,null,values);
+        values.put(COLUMN_POINTS,profile.getPoints());
+        values.put(COLUMN_PROFILETYPE, profile.getType());
 
         long answer = db.insert(TABLE_PROFILES,null,values);
-       // Log.d(TAG,"addData: Adding " + profile.getProfileName() + " TO " + TABLE_PROFILES);
 
         db.close();
-
         if (answer == 1){
             return false;
         }
@@ -82,24 +161,35 @@ public class MyDBHandler extends SQLiteOpenHelper {
 
     }
 
-    public void addChore(Chore chore){
+    public void addChore(Chore chore, ArrayList<String> selectedProfiles){
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
 
         values.put(COLUMN_CHORENAME, chore.getChoreName());
-        values.put(COLUMN_REQUIREMENTS, chore.getRequirements());
+        values.put(COLUMN_REQUIREMENTS, chore.getRequirements()); // filling out 1 row in the chore table
         values.put(COLUMN_DESCRIPTIONS, chore.getDescription());
         values.put(COLUMN_CHOREPOINTS, chore.getPoints());
 
 
-        // db.insert(TABLE_PROFILES,null,values);
+        for(int i=0; i<selectedProfiles.size();i++) { // THIS IS FOR THE CONNECTING TABLE WITH ALL THE ID'S
+            System.out.println(selectedProfiles.get(i));
+            String queryProfile = "Select * FROM " + TABLE_PROFILES + " WHERE " + COLUMN_PROFILENAME + " =\"" + selectedProfiles.get(i) + "\""; // GET ID FROM PROFIEL
+            Cursor cursor1 = db.rawQuery(queryProfile,null);
+
+            ContentValues connect = new ContentValues();
+            connect.put(COLUMN_GROUPID, counter);                 // THIS WILL GROUP a cHOER WITH MULTIPLE USERs
+            connect.put(COLUMN_USERID, selectedProfiles.get(i));  // ID OF THE USER
+            connect.put(COLUMN_CHOREsID, chore.getChoreName()); // ID OF CHORE
+            db.insert(TABLE_IDS,null,connect);
+        }
 
        db.insert(TABLE_CHORES,null,values);
-        // Log.d(TAG,"addData: Adding " + profile.getProfileName() + " TO " + TABLE_PROFILES);
-
+        counter++;
         db.close();
     }
+
+
 
 
     public Cursor getAllProfiles(){
@@ -112,6 +202,25 @@ public class MyDBHandler extends SQLiteOpenHelper {
         Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_CHORES,null);
         return res;
     }
+    public ArrayList<String> getProfileChores (String profileName){
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ArrayList<String> profileList = new ArrayList<>();
+
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_IDS + " WHERE " + COLUMN_USERID + " =\"" + profileName + "\"",null);
+
+        while(cursor.moveToNext()){
+            profileList.add(cursor.getString(2));
+        }
+
+        return profileList;
+
+    }
+    public void assignChoreToProfiles(String pname, String cname){
+
+
+    }
+
     public Chore findChore (String choreName){
         SQLiteDatabase db = this.getReadableDatabase();
 
@@ -137,6 +246,98 @@ public class MyDBHandler extends SQLiteOpenHelper {
         return chore;
     }
 
+    public Profile findProfile (String profileName){
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        String query = "Select * FROM " + TABLE_PROFILES + " WHERE " + COLUMN_PROFILENAME + " =\"" + profileName + "\"";
+        Cursor cursor = db.rawQuery(query,null);
+
+        Cursor res = db.rawQuery("SELECT * FROM "+ TABLE_PROFILES,null);
+
+        Profile profile = new Profile(profileName);
+
+
+
+        if(cursor.moveToFirst())
+        {
+            profile.setProfileName(cursor.getString(1));
+            profile.setPoints(Integer.parseInt(cursor.getString(2)));
+            profile.setType(Integer.parseInt(cursor.getString(4)));
+
+
+            cursor.close();
+        }
+        else{
+            profile=null;
+        }
+        //db.close();
+        return profile;
+    }
+
+    public void removeChore(String name){
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        System.out.println ( " THE cHORE TO REMOVE IS " + name);
+
+        String query = "Select * FROM " + TABLE_CHORES + " WHERE " + COLUMN_CHORENAME + " =\"" + name + "\"";
+        String query1 = "Select * FROM " + TABLE_IDS + " WHERE " + COLUMN_CHOREsID + " =\"" + name + "\"";
+
+        Cursor cursor =db.rawQuery( query, null);
+        Cursor cursor1=db.rawQuery(query1,null);
+        if(cursor.moveToNext()){
+            db.delete(TABLE_CHORES,COLUMN_CHORENAME +  " = ?", new String[] {name});
+        }
+        while (cursor1.moveToNext()){
+            db.delete(TABLE_IDS,COLUMN_CHOREsID+" = ?", new String[]{name});
+        }
+
+
+        db.close();
+
+
+        return ;
+    }
+
+    public void completeChore(String name){
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        System.out.println ( " THE cHORE TO REMOVE IS " + name);
+
+        String query = "Select * FROM " + TABLE_CHORES + " WHERE " + COLUMN_CHORENAME + " =\"" + name + "\"";
+        String query1 = "Select * FROM " + TABLE_IDS + " WHERE " + COLUMN_CHOREsID + " =\"" + name + "\"";
+
+        Cursor cursor =db.rawQuery( query, null);
+        Cursor cursor1=db.rawQuery(query1,null);
+        int pointsObtained=0;
+        if(cursor.moveToNext()){
+            pointsObtained = Integer.parseInt(cursor.getString(4));
+            db.delete(TABLE_CHORES,COLUMN_CHORENAME +  " = ?", new String[] {name});
+        }
+        while (cursor1.moveToNext()){
+            String query2 = "Select * FROM " + TABLE_PROFILES + " WHERE " + COLUMN_PROFILENAME + " =\"" + cursor1.getString(1) + "\"";
+            Cursor cursor2=db.rawQuery(query2,null);
+            cursor2.moveToFirst();
+            System.out.println("THIS IS IN CURSOR2 " + cursor2.getString(1));
+            int currentPoints = Integer.parseInt(cursor2.getString(2));
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_PROFILEID, cursor2.getString(0));
+            values.put(COLUMN_PROFILENAME, cursor2.getString(1));
+            int totalpoints = currentPoints+pointsObtained;
+            values.put(COLUMN_POINTS, totalpoints);
+
+            db.update(TABLE_PROFILES, values,COLUMN_PROFILENAME+ "=?", new String[]{cursor1.getString(1)});
+
+            db.delete(TABLE_IDS,COLUMN_CHOREsID+" = ?", new String[]{name});
+        }
+
+
+
+
+        db.close();
+        return;
+
+    }
+
     public void removeAllProfiles(){
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -144,6 +345,7 @@ public class MyDBHandler extends SQLiteOpenHelper {
 
         while(cursor.moveToNext()){
             String idStr = cursor.getString(0);
+            Log.e("THiswhatidSTR printS:" , idStr);
             db.delete(TABLE_PROFILES,COLUMN_PROFILEID, null);
 
         }
@@ -159,6 +361,7 @@ public class MyDBHandler extends SQLiteOpenHelper {
 
         while(cursor.moveToNext()){
             String idStr = cursor.getString(0);
+            Log.e("THiswhatidSTR printS:" , idStr);
             db.delete(TABLE_CHORES,COLUMN_CHOREID, null);
 
         }
@@ -167,8 +370,23 @@ public class MyDBHandler extends SQLiteOpenHelper {
         return ;
     }
 
+    public Cursor getAllData(){
+        SQLiteDatabase db = this.getWritableDatabase();
 
+        Cursor res = db.rawQuery("select * from " + TABLE_CHORES,null);
+        return res;
+    }
 
+    public void updateChore(String name, String requirement, String description, String points){
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_CHORENAME, name);
+        values.put(COLUMN_REQUIREMENTS, requirement );
+        values.put(COLUMN_DESCRIPTIONS, description);
+        values.put(COLUMN_CHOREPOINTS, points);
+
+        db.update(TABLE_CHORES, values,COLUMN_CHORENAME+ "=?", new String[]{name});
+    }
 
 
 

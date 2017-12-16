@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,6 +21,9 @@ import java.util.List;
 public class CreateProfile extends AppCompatActivity {
 
     TextView text;
+    int counter =0;
+    Spinner mySpinner;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -28,15 +32,35 @@ public class CreateProfile extends AppCompatActivity {
 
 
         text = (TextView) findViewById(R.id.name);
+        mySpinner = (Spinner) findViewById((R.id.spinnerItems));
 
 
     }
 
     public void addProfileToDB (View view)
     {
-        Profile profile = new Profile(text.getText().toString());
+
         MyDBHandler dbHandler = new MyDBHandler(this);
+        String spinnerInfo = mySpinner.getSelectedItem().toString();
+        System.out.println("THIS IS OUTPUT SPINNER " + spinnerInfo + " COUNTER " + counter);
+
+        Profile profile = new Profile(text.getText().toString() );
+        profile.setPoints(0);
+
+        if(spinnerInfo.equals("Child")){
+            profile.setType(0);
+        }
+        else{
+            profile.setType(1);
+        }
+        System.out.println("this is type at cration! " + profile.getType());
+
          boolean result = dbHandler.addProfile(profile);
+
+        dbHandler.updateSelectedProfile(profile.getProfileName());
+
+
+
 
          if(result){
              Toast.makeText(this,"DAta inserted", Toast.LENGTH_LONG).show();

@@ -15,6 +15,7 @@ public class Profile {
     String name;
     int points;
     List<Chore> chores;
+    int type;
 
     public Profile(String name){
         this.name = name;
@@ -50,6 +51,9 @@ public class Profile {
     public void addPoints(int points) {
         this.points = this.points + points;
     }
+    public void setPoints(int points){
+        this.points = points;
+    }
 
     public void setChores(List<Chore> chores) {
         this.chores = chores;
@@ -57,6 +61,10 @@ public class Profile {
     public void addAChore(Chore chore) {
         this.chores.add(chore);
     }
+
+    public void setType(int type){this.type=type;}
+
+    public int getType(){return type;}
 
 
 }
